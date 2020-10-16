@@ -35,7 +35,7 @@ class CIFAR10DataModule(pl.LightningDataModule):
 
     def train_dataloader(self, *args, **kwargs):
         cifar10_train = CIFAR10(self.dataset_root, train=True,
-                            download=False, transform=self.transform)
+                                download=False, transform=self.transform)
 
         return DataLoader(cifar10_train,
                           shuffle=True,
@@ -45,7 +45,7 @@ class CIFAR10DataModule(pl.LightningDataModule):
 
     def val_dataloader(self, *args, **kwargs):
         cifar10_val = CIFAR10(self.dataset_root, train=False,
-                          download=False, transform=self.transform)
+                              download=False, transform=self.transform)
 
         return DataLoader(cifar10_val,
                           shuffle=False,
