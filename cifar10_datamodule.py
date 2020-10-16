@@ -2,19 +2,19 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from torchvision.datasets import STL10
+from torchvision.datasets import CIFAR10
 
 from argparse_utils import from_argparse_args
 
 
-def stl10_collate_fn(batch):
+def cifar10_collate_fn(batch):
     images, labels = list(zip(*batch))
     images = torch.stack(images)
     labels = torch.tensor(labels)
     return images, labels
 
 
-class STL10DataModule(pl.LightningDataModule):
+class CIFAR10DataModule(pl.LightningDataModule):
     def __init__(self, dataset_root="./dataset",
                  train_batch_size=8, val_batch_size=8, num_workers=0):
         super().__init__()
@@ -31,27 +31,27 @@ class STL10DataModule(pl.LightningDataModule):
         ])
 
     def prepare_data(self, *args, **kwargs):
-        STL10(self.dataset_root, download=True)
+        CIFAR10(self.dataset_root, download=True)
 
     def train_dataloader(self, *args, **kwargs):
-        stl10_train = STL10(self.dataset_root, split='train+unlabeled',
+        cifar10_train = CIFAR10(self.dataset_root, train=True,
                             download=False, transform=self.transform)
 
-        return DataLoader(stl10_train,
+        return DataLoader(cifar10_train,
                           shuffle=True,
                           num_workers=self.num_workers,
                           batch_size=self.train_batch_size,
-                          collate_fn=stl10_collate_fn)
+                          collate_fn=cifar10_collate_fn)
 
     def val_dataloader(self, *args, **kwargs):
-        stl10_val = STL10(self.dataset_root, split='test',
+        cifar10_val = CIFAR10(self.dataset_root, train=False,
                           download=False, transform=self.transform)
 
-        return DataLoader(stl10_val,
+        return DataLoader(cifar10_val,
                           shuffle=False,
                           num_workers=self.num_workers,
                           batch_size=self.val_batch_size,
-                          collate_fn=stl10_collate_fn)
+                          collate_fn=cifar10_collate_fn)
 
     @staticmethod
     def add_argparse_args(parser):
