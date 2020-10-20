@@ -31,12 +31,13 @@ def main(dm_cls, model_cls, model_args, logger_name):
 
     dm = dm_cls.from_argparse_args(args)
 
-    byol_args = model_cls.extract_kwargs_from_argparse_args(
+    extracted_model_args = model_cls.extract_kwargs_from_argparse_args(
         args, **model_args)
-    model = model_cls(**byol_args)
+    model = model_cls(**extracted_model_args)
 
     logger = TensorBoardLogger('tb_logs', name=args.logger_name)
     logger.log_hyperparams(args)
+    logger.log_hyperparams(model_args)
 
     checkpoint = ModelCheckpoint(
         monitor='val_loss', filepath=None, save_top_k=args.save_top_k)

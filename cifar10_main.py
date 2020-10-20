@@ -9,18 +9,31 @@ class CIFAR10VisionTransformer(VisionTransformer):
     def __init__(self, *args,
                  dim=None,
                  patch_size=None,
+                 n_patches=None,
+                 n_layers=None,
+                 n_heads=None,
+                 dropout=None,
                  **kwargs):
-        super().__init__(*args, dim=dim, patch_size=patch_size, **kwargs)
-        self.transformer = nn.Identity()
-        self.patch_embedding = nn.Linear(patch_size*patch_size*3, dim)
+        super().__init__(*args,
+                         dim=dim,
+                         patch_size=patch_size,
+                         n_patches=n_patches,
+                         n_layers=n_layers,
+                         n_heads=n_heads,
+                         dropout=dropout,
+                         **kwargs)
         n_classes = 10
-        self.mlp = nn.Linear(dim, n_classes)
+        self.classifier = nn.Linear(dim, n_classes)
 
 
 vit_args = {
-    "patch_size": 16,
-    "dim": 32,
-    "n_patches": (32*32)//(16*16),
+    "n_channels": 3,
+    "patch_size": 8,
+    "dim": 128,
+    "n_patches": (32//8)**2,
+    "n_layers": 4,
+    "n_heads": 4,
+    "dropout": 0.,
 }
 
 
