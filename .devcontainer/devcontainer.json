@@ -20,7 +20,7 @@
         "python.linting.enabled": false
     },
     "workspaceMount": "src=/home/kitsune-udon/vit,dst=/work,type=bind",
-    "mounts": ["source=/mnt/nfs/imagenet,target=/imagenet,type=bind"],
+    "mounts": ["source=/srv/work/imagenet,target=/imagenet,type=bind"],
     // Uncomment the next line if you want to publish any ports.
     "appPort": [6006],
     // Uncomment the next line to run commands after the container is created - for example installing git.
