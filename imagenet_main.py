@@ -1,11 +1,11 @@
 import torch.nn as nn
 
-from cifar10_datamodule import CIFAR10DataModule
+from imagenet_datamodule import ImageNetDataModule
 from train_utils import main
 from vit import VisionTransformer
 
 
-class CIFAR10VisionTransformer(VisionTransformer):
+class ImageNetVisionTransformer(VisionTransformer):
     def __init__(self, *args,
                  dim=None,
                  patch_size=None,
@@ -22,20 +22,23 @@ class CIFAR10VisionTransformer(VisionTransformer):
                          n_heads=n_heads,
                          dropout=dropout,
                          **kwargs)
-        n_classes = 10
+        n_classes = 1000
         self.classifier = nn.Linear(dim, n_classes)
 
 
 vit_args = {
     "n_channels": 3,
-    "patch_size": 8,
-    "dim": 256,
-    "n_patches": (32//8)**2,
-    "n_layers": 8,
-    "n_heads": 4,
+    "patch_size": 32,
+    "dim": 1024,
+    "n_patches": (224//32)**2,
+    "n_layers": 6,
+    "n_heads": 8,
     "dropout": 0.,
 }
 
 
 if __name__ == '__main__':
-    main(CIFAR10DataModule, CIFAR10VisionTransformer, vit_args, "vit_cifar10")
+    main(ImageNetDataModule,
+         ImageNetVisionTransformer,
+         vit_args,
+         "vit_imagenet")

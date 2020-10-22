@@ -1,24 +1,22 @@
 import pytorch_lightning as pl
 import torch
-from PIL import Image
 from torch.utils.data import DataLoader
-from torchvision.datasets import CIFAR10
 from torchvision.transforms.transforms import (ColorJitter, Compose, Normalize,
-                                               RandomAffine, RandomGrayscale,
-                                               ToTensor)
+                                               RandomGrayscale, ToTensor)
 
 from argparse_utils import from_argparse_args
+from imagenet_dataset import ImageNet
 
 
-def cifar10_collate_fn(batch):
+def imagenet_collate_fn(batch):
     images, labels = list(zip(*batch))
     images = torch.stack(images)
     labels = torch.tensor(labels)
     return images, labels
 
 
-class CIFAR10DataModule(pl.LightningDataModule):
-    def __init__(self, dataset_root="./dataset",
+class ImageNetDataModule(pl.LightningDataModule):
+    def __init__(self, dataset_root=".",
                  train_batch_size=8, val_batch_size=8, num_workers=0):
         super().__init__()
 
@@ -29,15 +27,9 @@ class CIFAR10DataModule(pl.LightningDataModule):
 
         self.train_transform = Compose([
             ColorJitter(brightness=0.2,
-                        contrast=0.2,
-                        saturation=0.2,
-                        hue=0
+                        contrast=0.2
                         ),
             RandomGrayscale(p=0.1),
-            RandomAffine(degrees=45,
-                         scale=(0.9, 1.1),
-                         resample=Image.BILINEAR
-                         ),
             ToTensor(),
             Normalize(mean=(0.485, 0.456, 0.406),
                       std=(0.229, 0.224, 0.225))
@@ -49,28 +41,27 @@ class CIFAR10DataModule(pl.LightningDataModule):
                       std=(0.229, 0.224, 0.225))
         ])
 
-    def prepare_data(self, *args, **kwargs):
-        CIFAR10(self.dataset_root, download=True)
-
     def train_dataloader(self, *args, **kwargs):
-        cifar10_train = CIFAR10(self.dataset_root, train=True,
-                                download=False, transform=self.train_transform)
+        imagenet_train = ImageNet(self.dataset_root,
+                                  split='train',
+                                  transform=self.train_transform)
 
-        return DataLoader(cifar10_train,
+        return DataLoader(imagenet_train,
                           shuffle=True,
                           num_workers=self.num_workers,
                           batch_size=self.train_batch_size,
-                          collate_fn=cifar10_collate_fn)
+                          collate_fn=imagenet_collate_fn)
 
     def val_dataloader(self, *args, **kwargs):
-        cifar10_val = CIFAR10(self.dataset_root, train=False,
-                              download=False, transform=self.val_transform)
+        imagenet_val = ImageNet(self.dataset_root,
+                                split='val',
+                                transform=self.val_transform)
 
-        return DataLoader(cifar10_val,
+        return DataLoader(imagenet_val,
                           shuffle=False,
                           num_workers=self.num_workers,
                           batch_size=self.val_batch_size,
-                          collate_fn=cifar10_collate_fn)
+                          collate_fn=imagenet_collate_fn)
 
     @staticmethod
     def add_argparse_args(parser):
@@ -81,7 +72,7 @@ class CIFAR10DataModule(pl.LightningDataModule):
         parser.add_argument("--num_workers", type=int, default=4,
                             help="number of processes for dataloader")
         parser.add_argument("--dataset_root", type=str,
-                            default="./dataset", help="root path of dataset")
+                            default="/imagenet", help="root path of dataset")
 
         return parser
 

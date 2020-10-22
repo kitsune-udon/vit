@@ -6,11 +6,11 @@ BATCHSIZE=256
 
 ARGS="--seed=1 \
       --gpus=1 \
-      --max_epochs=40 \
+      --max_epochs=80 \
       --num_workers=4 \
       --train_batch_size=$BATCHSIZE \
       --val_batch_size=$BATCHSIZE \
-      --learning_rate=1e-3 \
-      --weight_decay=1e-2"
+      --learning_rate=0.2 \
+      --weight_decay=1e-5"
 
 python3 $PROG $ARGS

@@ -3,9 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
-from torch.optim import AdamW
-from torch.optim.lr_scheduler import StepLR
-from argparse_utils import extract_kwargs_from_argparse_args
+from pl_bolts.optimizers import LARSWrapper, LinearWarmupCosineAnnealingLR
+from torch.optim import SGD
+
+from argparse_utils import from_argparse_args
 
 
 class MSA(nn.Module):  # Multiheaded self-attention
@@ -85,6 +86,8 @@ class VisionTransformer(pl.LightningModule):
                  dropout=None,
                  learning_rate=None,
                  weight_decay=None,
+                 warmup_epochs=None,
+                 max_epochs=None,
                  **kwargs
                  ):
         super().__init__(*args, **kwargs)
@@ -144,12 +147,20 @@ class VisionTransformer(pl.LightningModule):
         return {'loss': loss, 'correct': c, 'batch_size': x.size()[0]}
 
     def validation_epoch_end(self, outputs):
-        total = sum([out['batch_size'] for out in outputs])
+        def _sum(xs):
+            if isinstance(xs[0], list):
+                return sum(map(sum, xs))
+            elif isinstance(xs[0], torch.Tensor):
+                return sum(map(torch.sum, xs))
+            else:
+                return sum(xs)
 
-        ls = [out['loss'] for out in outputs]
-        val_loss = sum(ls) / total
+        total = _sum([out['batch_size'] for out in outputs])
 
-        correct = sum([out['correct'] for out in outputs])
+        loss_sum = _sum([out['loss'] for out in outputs])
+        val_loss = loss_sum / total
+
+        correct = _sum([out['correct'] for out in outputs])
         val_acc = correct / total * 100
 
         logs = {'val_loss': val_loss, 'val_acc': val_acc}
@@ -158,21 +169,29 @@ class VisionTransformer(pl.LightningModule):
         return results
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(),
-                          lr=self.hparams.learning_rate,
-                          weight_decay=self.hparams.weight_decay)
+        optimizer = SGD(self.parameters(),
+                        lr=self.hparams.learning_rate,
+                        momentum=0.9,
+                        weight_decay=self.hparams.weight_decay)
+        optimizer = LARSWrapper(optimizer)
 
-        scheduler = StepLR(optimizer, step_size=1, gamma=1.)
+        scheduler = LinearWarmupCosineAnnealingLR(
+            optimizer,
+            warmup_epochs=self.hparams.warmup_epochs,
+            max_epochs=self.hparams.max_epochs,
+            warmup_start_lr=0.01
+        )
 
         return [optimizer], [scheduler]
 
     @classmethod
-    def extract_kwargs_from_argparse_args(cls, args, **kwargs):
-        return extract_kwargs_from_argparse_args(cls, args, **kwargs)
+    def from_argparse_args(cls, args, **kwargs):
+        return from_argparse_args(cls, args, **kwargs)
 
     @staticmethod
     def add_argparse_args(parser):
-        parser.add_argument('--learning_rate', type=float, default=1e-3)
-        parser.add_argument('--weight_decay', type=float, default=1e-2)
+        parser.add_argument('--learning_rate', type=float, default=0.2)
+        parser.add_argument('--weight_decay', type=float, default=1e-5)
+        parser.add_argument('--warmup_epochs', type=int, default=10)
 
         return parser
